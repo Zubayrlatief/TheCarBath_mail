@@ -19,8 +19,18 @@ function createTransporter() {
 }
 
 function validate(body) {
-  const required = ['fullName', 'email', 'phone', 'serviceType', 'preferredDate', 'preferredTime', 'location'];
+  const required = [
+    'service', 'businessPark', 'firstName', 'lastName',
+    'email', 'phone', 'vehicleMake', 'vehicleModel',
+    'vehicleYear', 'vehicleColor', 'preferredDate', 'preferredTime'
+  ];
   const missing = required.filter(k => !body || !String(body[k] || '').trim());
+
+  // Conditional: when businessPark is 'other', customBusinessPark is required
+  if ((body?.businessPark || '').trim().toLowerCase() === 'other' && !String(body?.customBusinessPark || '').trim()) {
+    missing.push('customBusinessPark');
+  }
+
   return { ok: missing.length === 0, missing };
 }
 
@@ -40,23 +50,42 @@ module.exports = async (req, res) => {
   if (!v.ok) return res.status(400).json({ error: 'Missing required fields', missing: v.missing });
 
   const {
-    fullName, email, phone, serviceType, preferredDate, preferredTime, location,
-    vehicleMake, vehicleModel, vehicleYear, vehicleColor, notes
+    service,
+    businessPark,
+    customBusinessPark,
+    firstName,
+    lastName,
+    email,
+    phone,
+    vehicleMake,
+    vehicleModel,
+    vehicleYear,
+    vehicleColor,
+    preferredDate,
+    preferredTime,
+    notes,
+    agreedToTerms
   } = data;
+
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+  const businessParkDisplay = (businessPark || '').toLowerCase() === 'other'
+    ? (customBusinessPark || 'Other')
+    : businessPark;
 
   const html = `
     <h2>New Booking Request</h2>
     <p><strong>Name:</strong> ${fullName}</p>
     <p><strong>Email:</strong> ${email}</p>
     <p><strong>Phone:</strong> ${phone}</p>
-    <p><strong>Service:</strong> ${serviceType}</p>
+    <p><strong>Service:</strong> ${service}</p>
+    <p><strong>Business Park:</strong> ${businessParkDisplay}</p>
     <p><strong>Date:</strong> ${preferredDate}</p>
     <p><strong>Time:</strong> ${preferredTime}</p>
-    <p><strong>Location:</strong> ${location}</p>
     <hr />
     <p><strong>Vehicle:</strong> ${[vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(' ')}</p>
     <p><strong>Color:</strong> ${vehicleColor || '-'}</p>
     <p><strong>Notes:</strong> ${notes || '-'}</p>
+    <p><strong>Agreed To Terms:</strong> ${agreedToTerms ? 'Yes' : 'No'}</p>
   `;
 
   try {
@@ -64,10 +93,10 @@ module.exports = async (req, res) => {
     const to = process.env.NOTIFY_TO || process.env.EMAIL_USER;
 
     await transporter.sendMail({
-      from: `"The Car Bath" <${process.env.EMAIL_USER}>`,
+      from: `"The Car Bath Website" <${process.env.EMAIL_USER}>`,
       to,
       replyTo: email,
-      subject: `New Booking – ${serviceType} – ${fullName}`,
+      subject: `New Booking – ${service} – ${fullName}`,
       html
     });
 
