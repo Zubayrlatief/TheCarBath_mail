@@ -1,0 +1,15 @@
+{
+    "name": "thecarbath-backend",
+    "version": "1.0.0",
+    "description": "Serverless email API for The Car Bath (Vercel Functions)",
+    "license": "MIT",
+    "type": "commonjs",
+    "scripts": {
+      "dev": "vercel dev",
+      "deploy": "vercel --prod",
+      "start": "vercel dev"
+    },
+    "dependencies": {
+      "nodemailer": "^6.9.13"
+    }
+  }
