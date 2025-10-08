@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/Zubayrlatief/TheCarBath_mail#readme",
   "dependencies": {
-    "nodemailer": "^7.0.7"
+    "nodemailer": "^7.0.7",
+    "uuid": "^9.0.1"
   }
 }

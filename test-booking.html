@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Booking API</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-top: 0;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+      color: #555;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      display: none;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Test Booking API</h1>
+    
+    <div class="info">
+      <strong>API Endpoint:</strong> <span id="apiUrl">Loading...</span><br>
+      <small>Change this below if testing locally or on Vercel</small>
+    </div>
+
+    <label for="apiBase">API Base URL:</label>
+    <input type="text" id="apiBase" placeholder="https://your-project.vercel.app" value="https://the-car-bath-mail.vercel.app">
+
+    <label for="service">Service *</label>
+    <select id="service" required>
+      <option value="">Select service...</option>
+      <option value="executive-detail">Executive Detail</option>
+      <option value="full-wash">Full Wash</option>
+      <option value="interior-clean">Interior Clean</option>
+      <option value="basic-wash">Basic Wash</option>
+    </select>
+
+    <label for="businessPark">Location *</label>
+    <select id="businessPark" required>
+      <option value="">Select location...</option>
+      <option value="arden-grove">Arden Grove</option>
+      <option value="century-city">Century City</option>
+      <option value="bellville">Bellville</option>
+      <option value="private">Private Location (Home, etc.)</option>
+      <option value="other">Other</option>
+    </select>
+
+    <label for="customBusinessPark">Custom Location (if Private/Other)</label>
+    <input type="text" id="customBusinessPark" placeholder="Enter your address or location">
+
+    <label for="firstName">First Name *</label>
+    <input type="text" id="firstName" required placeholder="John">
+
+    <label for="lastName">Last Name *</label>
+    <input type="text" id="lastName" required placeholder="Doe">
+
+    <label for="email">Email *</label>
+    <input type="email" id="email" required placeholder="john@example.com">
+
+    <label for="phone">Phone *</label>
+    <input type="tel" id="phone" required placeholder="+27 68 507 0088">
+
+    <label for="vehicleMake">Vehicle Make *</label>
+    <input type="text" id="vehicleMake" required placeholder="Toyota">
+
+    <label for="vehicleModel">Vehicle Model (optional)</label>
+    <input type="text" id="vehicleModel" placeholder="Corolla">
+
+    <label for="vehicleYear">Vehicle Year (optional)</label>
+    <input type="text" id="vehicleYear" placeholder="2020">
+
+    <label for="vehicleColor">Vehicle Color (optional)</label>
+    <input type="text" id="vehicleColor" placeholder="White">
+
+    <label for="preferredDate">Preferred Date *</label>
+    <input type="date" id="preferredDate" required>
+
+    <label for="preferredTime">Preferred Time *</label>
+    <input type="time" id="preferredTime" required>
+
+    <label for="notes">Notes</label>
+    <textarea id="notes" rows="3" placeholder="Any special requests..."></textarea>
+
+    <button onclick="checkAvailability()" id="checkBtn">Check Availability</button>
+    <button onclick="testBooking()" id="submitBtn" disabled>Send Test Booking</button>
+
+    <div id="availabilityResult" class="result"></div>
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    // Update the displayed API URL
+    function updateApiUrl() {
+      const base = document.getElementById('apiBase').value;
+      document.getElementById('apiUrl').textContent = base + '/api/bookings';
+    }
+
+    document.getElementById('apiBase').addEventListener('input', updateApiUrl);
+    updateApiUrl();
+
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('preferredDate').value = today;
+    document.getElementById('preferredTime').value = '10:00';
+
+    // Auto-check availability when date/time/location changes
+    ['preferredDate', 'preferredTime', 'businessPark', 'customBusinessPark'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        setTimeout(checkAvailability, 500); // Debounce
+      });
+    });
+
+    async function checkAvailability() {
+      const availabilityDiv = document.getElementById('availabilityResult');
+      const submitBtn = document.getElementById('submitBtn');
+      const checkBtn = document.getElementById('checkBtn');
+      
+      const businessPark = document.getElementById('businessPark').value;
+      const customBusinessPark = document.getElementById('customBusinessPark').value;
+      const location = (businessPark === 'other' || businessPark === 'private') 
+        ? customBusinessPark || 'Custom Location'
+        : businessPark;
+      
+      if (!location || !document.getElementById('preferredDate').value || !document.getElementById('preferredTime').value) {
+        availabilityDiv.className = 'result error';
+        availabilityDiv.style.display = 'block';
+        availabilityDiv.innerHTML = '<strong>⚠️ Please fill in date, time, and location first</strong>';
+        return;
+      }
+      
+      checkBtn.disabled = true;
+      checkBtn.textContent = 'Checking...';
+      availabilityDiv.style.display = 'none';
+      
+      try {
+        const apiBase = document.getElementById('apiBase').value.replace(/\/$/, '');
+        const response = await fetch(`${apiBase}/api/check-availability`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            date: document.getElementById('preferredDate').value,
+            time: document.getElementById('preferredTime').value,
+            location: location
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.available) {
+          availabilityDiv.className = 'result success';
+          availabilityDiv.innerHTML = `<strong>✅ Available!</strong><br>This time slot is available for booking.`;
+          submitBtn.disabled = false;
+        } else {
+          availabilityDiv.className = 'result error';
+          availabilityDiv.innerHTML = `<strong>❌ Not Available</strong><br>This time slot is already booked. Please choose another time.`;
+          submitBtn.disabled = true;
+        }
+      } catch (err) {
+        availabilityDiv.className = 'result error';
+        availabilityDiv.innerHTML = `<strong>❌ Error checking availability</strong><br>${err.message}`;
+        submitBtn.disabled = true;
+      } finally {
+        availabilityDiv.style.display = 'block';
+        checkBtn.disabled = false;
+        checkBtn.textContent = 'Check Availability';
+      }
+    }
+
+    async function testBooking() {
+      const resultDiv = document.getElementById('result');
+      const submitBtn = document.getElementById('submitBtn');
+      
+      // Gather form data
+      const formData = {
+        service: document.getElementById('service').value,
+        businessPark: document.getElementById('businessPark').value,
+        customBusinessPark: document.getElementById('customBusinessPark').value,
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        vehicleMake: document.getElementById('vehicleMake').value,
+        vehicleModel: document.getElementById('vehicleModel').value,
+        vehicleYear: document.getElementById('vehicleYear').value,
+        vehicleColor: document.getElementById('vehicleColor').value,
+        preferredDate: document.getElementById('preferredDate').value,
+        preferredTime: document.getElementById('preferredTime').value,
+        notes: document.getElementById('notes').value,
+        agreedToTerms: true
+      };
+
+      // Basic validation
+      const required = ['service', 'businessPark', 'firstName', 'lastName', 'email', 'phone', 
+                       'vehicleMake', 'preferredDate', 'preferredTime'];
+      
+      const missing = required.filter(key => !formData[key] || !formData[key].trim());
+      
+      if (missing.length > 0) {
+        resultDiv.className = 'result error';
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<strong>❌ Missing required fields:</strong> ${missing.join(', ')}`;
+        return;
+      }
+
+      // Disable button
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+      
+      resultDiv.style.display = 'none';
+
+      try {
+        const apiBase = document.getElementById('apiBase').value.replace(/\/$/, '');
+        const response = await fetch(`${apiBase}/api/bookings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          resultDiv.className = 'result success';
+          resultDiv.innerHTML = `<strong>✅ Success!</strong><br>` +
+                               `Status: ${response.status}<br>` +
+                               `Message: ${data.message || 'Booking email sent'}<br>` +
+                               `Booking ID: ${data.bookingId || 'N/A'}<br>` +
+                               `Check your inbox at: ${formData.email}`;
+        } else if (response.status === 409) {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = `<strong>❌ Time Slot Already Booked</strong><br>` +
+                               `${data.message || data.error}<br>` +
+                               `Please choose a different time.`;
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = `<strong>❌ Error ${response.status}</strong><br>` +
+                               `${data.error || 'Unknown error'}<br>` +
+                               (data.missing ? `Missing fields: ${data.missing.join(', ')}` : '');
+        }
+      } catch (err) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<strong>❌ Network Error</strong><br>${err.message}<br>` +
+                             `Make sure the API is running and CORS is configured.`;
+      } finally {
+        resultDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Test Booking';
+      }
+    }
+
+    // Auto-fill test data
+    document.getElementById('firstName').value = 'Jane';
+    document.getElementById('lastName').value = 'Doe';
+    document.getElementById('email').value = 'jane@example.com';
+    document.getElementById('phone').value = '+27 68 507 0088';
+    document.getElementById('service').value = 'executive-detail';
+    document.getElementById('businessPark').value = 'private';
+    document.getElementById('customBusinessPark').value = '123 Oak Street, Cape Town';
+    document.getElementById('vehicleMake').value = 'Toyota';
+    document.getElementById('notes').value = 'Please call on arrival.';
+  </script>
+</body>
+</html>
+
