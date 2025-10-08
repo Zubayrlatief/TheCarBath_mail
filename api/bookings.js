@@ -74,12 +74,22 @@ module.exports = async (req, res) => {
   let data = {};
   try {
     data = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-  } catch {
+    console.log('Received booking request:', JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error('JSON parse error:', err.message);
     return res.status(400).json({ error: 'Invalid JSON body' });
   }
 
   const v = validate(data);
-  if (!v.ok) return res.status(400).json({ error: 'Missing required fields', missing: v.missing });
+  if (!v.ok) {
+    console.error('Validation failed:', { missing: v.missing, received: Object.keys(data) });
+    return res.status(400).json({ 
+      error: 'Missing required fields', 
+      missing: v.missing,
+      received: Object.keys(data),
+      details: 'When businessPark is "private" or "other", customBusinessPark is also required'
+    });
+  }
 
   // Check time slot availability before proceeding
   const businessParkDisplay = (data.businessPark || '').toLowerCase() === 'other' || (data.businessPark || '').toLowerCase() === 'private'
