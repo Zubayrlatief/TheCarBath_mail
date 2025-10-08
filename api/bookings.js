@@ -82,12 +82,22 @@ module.exports = async (req, res) => {
 
   const v = validate(data);
   if (!v.ok) {
-    console.error('Validation failed:', { missing: v.missing, received: Object.keys(data) });
+    console.error('Validation failed:', { 
+      missing: v.missing, 
+      businessPark: data.businessPark,
+      customBusinessPark: data.customBusinessPark,
+      customBusinessParkLength: (data.customBusinessPark || '').length
+    });
     return res.status(400).json({ 
       error: 'Missing required fields', 
       missing: v.missing,
       received: Object.keys(data),
-      details: 'When businessPark is "private" or "other", customBusinessPark is also required'
+      details: 'When businessPark is "private" or "other", customBusinessPark is also required',
+      debug: {
+        businessPark: data.businessPark,
+        customBusinessPark: data.customBusinessPark || '(empty)',
+        customBusinessParkLength: (data.customBusinessPark || '').length
+      }
     });
   }
 
